@@ -1,12 +1,11 @@
 const express = require('express')
 const router = express.Router()
 const bodyParser =  require('body-parser')
-const usuario =  require('../databse/moduleuser')
+const usuario =  require('../database/moduleuser')
 const jsonwebtoken = require('jsonwebtoken')
 const midware = require('../midware')
 const verifyToken = new midware().verifyTokern
-const hadeDeAtivação = "asdfasdgfglçjasdlkgfjasdouasgasdgas"
-
+const TokenManager =  require('../service/token/')
 
 router.use(bodyParser.json())
 
@@ -47,8 +46,8 @@ router.put('/update',verifyToken, async(req,res)=>{
             email: req.body.email,
             data: req.body.data,
             cpf: req.body.cpf,
-            usuario: req.body.usuario,
-            senha: req.body.senha
+            user: req.body.user,
+            password: req.body.user
         },
         {
             where:{
@@ -76,23 +75,19 @@ router.delete('/remove', verifyToken,async (req,res)=>{
 
 });
 
-router.post('/auth',verifyToken,async (req,res)=>{
+router.post('/auth',async (req,res)=>{
     const {user, password} = req.body
-    try{
-        const resultado = await usuario.findOne({where:{
+
+        usuario.findOne({where:{
             user:user,
             password:password
-        }})
-
-        console.log(resultado)
-
-        if(resultado){
-            res.status(500).json({message:"sign"})
-        }else{
+        }}).then(data =>{
+            const {id,user} = data.dataValues
+            var token = TokenManager.create(id,user)
+            res.status(500).json({message:"ok",token})
+        }).catch((err)=>{
             res.status(401).json({message: "usuario não localizado"})
-        }
-    }catch(err){
-        res.status(401).json({message: "usuario não localizado"})
-    }
+            console.log(err)
+        })
 })
 module.exports =  router;
